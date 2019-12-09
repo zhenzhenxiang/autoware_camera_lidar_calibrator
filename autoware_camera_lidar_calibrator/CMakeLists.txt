@@ -53,6 +53,19 @@ target_link_libraries(autoware_camera_lidar_calibration_node
 )
 add_dependencies(autoware_camera_lidar_calibration_node ${catkin_EXPORTED_TARGETS})
 
+# calibration_publisher
+add_executable(calibration_publisher
+        src/calibration_publisher/calibration_publisher.cpp
+        )
+
+add_dependencies(calibration_publisher
+        ${catkin_EXPORTED_TARGETS}
+        )
+
+target_link_libraries(calibration_publisher
+        ${catkin_LIBRARIES}
+        )
+
 #camera intrinsics node
 catkin_python_setup()
 
@@ -62,3 +75,4 @@ catkin_install_python(PROGRAMS
     scripts/tarfile_calibration.py
     DESTINATION ${CATKIN_PACKAGE_BIN_DESTINATION}
 )
+
