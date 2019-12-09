@@ -1,4 +1,4 @@
 Header header
 string type
-ImageRect[] obj
+image_rect[] obj
 # XXX Should this message have 'score' ?

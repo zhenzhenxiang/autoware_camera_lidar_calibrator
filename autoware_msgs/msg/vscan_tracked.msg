@@ -1,4 +1,4 @@
 geometry_msgs/Point position
 float32 orientation
 float32 velocity
-GeometricRectangle geo_rect
+geometric_rectangle geo_rect
