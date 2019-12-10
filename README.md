@@ -4,7 +4,7 @@
 
 ### Calibration
 
-Follow the instructions of the calibration tool from Autoware to get the extrinsic parameters.
+Follow the [instructions](autoware_camera_lidar_calibrator/README.md) of the calibration tool from Autoware to get the extrinsic parameters.
 
 ### Evalutation
 
