@@ -12,5 +12,5 @@ Follow the instructions of the calibration tool from Autoware to get the extrins
 2. Launch the script:
    
    ```
-   calib_param_yaml:=/path/to/autoware_lidar_camera_calibration.yaml
+   roslaunch autoware_camera_lidar_calibrator evaluate_camera_lidar_calibration.launch  calib_param_yaml:=/path/to/autoware_lidar_camera_calibration.yaml
    ```
