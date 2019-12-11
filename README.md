@@ -19,6 +19,7 @@ The graph shown by `rqt_graph` should be similar to the following:
    roslaunch autoware_camera_lidar_calibrator evaluate_camera_lidar_calibration.launch  calib_file:=/path/to/autoware_lidar_camera_calibration.yaml
    ```
 3. Play the bag:
+   
    ```
    rosbag play data.bag
    ```
