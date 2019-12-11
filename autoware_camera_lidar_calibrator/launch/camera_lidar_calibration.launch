@@ -14,6 +14,7 @@ roslaunch autoware_camera_lidar_calibrator camera_lidar_calibration.launch intri
         <param name="register_lidar2camera_tf" type="bool" value="false"/>
         <param name="publish_extrinsic_mat" type="bool" value="false"/>
         <param name="publish_camera_info" type="bool" value="true"/>
+        <remap from="image" to="$(arg image_src)" />
     </node>
 
     <node pkg="image_processor" type="image_rectifier" name="rectifier" ns="$(arg camera_id)" output="screen">
@@ -22,12 +23,14 @@ roslaunch autoware_camera_lidar_calibrator camera_lidar_calibration.launch intri
     </node>
 
     <node pkg="image_view2" type="image_view2" name="image_view2" ns="$(arg camera_id)" output="screen">
-        <remap from="image" to="image_rectified" />
+        <remap from="image" to="$(arg image_src)" />
     </node>
 
     <node pkg="autoware_camera_lidar_calibrator" type="autoware_camera_lidar_calibration_node" name="autoware_camera_lidar_calibration_node" ns="$(arg camera_id)" output="screen">
-        <param name="image_src" value="/image_rectified" />
+        <param name="image_src" value="$(arg image_src)" />
         <param name="camera_info_src" value="$(arg camera_info_src)" />
     </node>
+
+    <node pkg="rviz" name="rviz" type="rviz" args="-d $(find autoware_camera_lidar_calibrator)/rviz/calib.rviz"/>
 
 </launch>
