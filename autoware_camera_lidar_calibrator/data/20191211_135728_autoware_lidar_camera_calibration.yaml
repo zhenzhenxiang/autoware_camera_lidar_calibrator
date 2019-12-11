@@ -24,7 +24,7 @@ DistCoeff: !!opencv-matrix
        9.2727491973148895e-04, 2.1958345616541110e-03,
        -1.8515387443325825e-02 ]
 ImageSize: [ 1920, 1208 ]
-ReprojectionError: 0
+ReprojectionError: 3.7
 DistModel: plumb_bob
 CalibData: !!opencv-matrix
    rows: 9

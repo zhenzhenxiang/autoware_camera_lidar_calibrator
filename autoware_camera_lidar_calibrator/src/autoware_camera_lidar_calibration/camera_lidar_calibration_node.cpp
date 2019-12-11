@@ -101,7 +101,7 @@ class RosCameraLidarApp
     return cv::Point3f(x, y, z);
   }
 
-  void SaveCalibrationFile(cv::Mat in_extrinsic, cv::Mat in_intrinsic, cv::Mat in_dist_coeff, cv::Size in_size)
+  void SaveCalibrationFile(cv::Mat in_extrinsic, cv::Mat in_intrinsic, cv::Mat in_dist_coeff, cv::Size in_size, float error)
   {
     std::string path_filename_str;
     const char *homedir;
@@ -132,7 +132,7 @@ class RosCameraLidarApp
     fs << "CameraMat" << in_intrinsic;
     fs << "DistCoeff" << in_dist_coeff;
     fs << "ImageSize" << in_size;
-    fs << "ReprojectionError" << 0;
+    fs << "ReprojectionError" << error;
     fs << "DistModel" << "plumb_bob";
 
     cv::Mat calib_data = cv::Mat::zeros(clicked_image_points_.size(), 5, CV_32F);
@@ -183,6 +183,22 @@ class RosCameraLidarApp
       cv::Mat rotation_matrix;
       cv::Rodrigues(rotation_vector, rotation_matrix);
 
+      // Calculate reprojection errors
+      std::vector<cv::Point2f> projected_image_points;
+      cv::projectPoints(clicked_velodyne_points_, rotation_vector, translation_vector, camera_instrinsics_,
+                        distortion_coefficients_, projected_image_points);
+
+      float reprojection_error = 0.0;
+      for (unsigned int i = 0; i < clicked_image_points_.size(); i++)
+      {
+        float error_x = clicked_image_points_[i].x - projected_image_points[i].x;
+        float error_y = clicked_image_points_[i].y - projected_image_points[i].y;
+        reprojection_error += sqrt(error_x * error_x + error_y * error_y);
+      }
+      reprojection_error /= clicked_image_points_.size();
+
+      std::cout << "Reprojection_error: " << reprojection_error << std::endl;
+
       // Get estimated extrinsics from camera to lidar
       R_cam2lidar = rotation_matrix.t();
       t_cam2lidar = -rotation_matrix.t() * translation_vector;
@@ -197,7 +213,7 @@ class RosCameraLidarApp
 
       // std::cout << "extrinsics: \n" << extrinsics << std::endl;
 
-      SaveCalibrationFile(camera_extrinsics_,camera_instrinsics_, distortion_coefficients_, image_size_);
+      SaveCalibrationFile(camera_extrinsics_,camera_instrinsics_, distortion_coefficients_, image_size_, reprojection_error);
     }
   }
 
