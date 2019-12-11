@@ -21,6 +21,7 @@
 #include <sensor_msgs/PointCloud.h>
 #include <sensor_msgs/PointCloud2.h>
 #include <geometry_msgs/PointStamped.h>
+#include <autoware_msgs/projection_matrix.h>
 #include <pcl_conversions/pcl_conversions.h>
 #include <pcl/PCLPointCloud2.h>
 #include <pcl_ros/point_cloud.h>
@@ -46,12 +47,14 @@ class RosCameraLidarApp
   ros::Subscriber 	subscriber_image_raw_;
   ros::Subscriber 	subscriber_points_raw_;
   ros::Subscriber     subscriber_intrinsics_;
+  ros::Subscriber     subscriber_extrinsics_;
   ros::Subscriber     subscriber_clicked_point_;
   ros::Subscriber     subscriber_image_point_;
 
   cv::Size            image_size_;
   cv::Mat             camera_instrinsics_;
   cv::Mat             distortion_coefficients_;
+  cv::Mat             camera_extrinsics_;
 
   cv::Mat             lidar_camera_rotation_matrix_;
   cv::Mat             lidar_camera_translation_vector_;
@@ -95,7 +98,7 @@ class RosCameraLidarApp
       y = atan2(-in_rotation.at<double>(2,0), sy);
       z = 0;
     }
-    return cv::Point3f(RAD2DEG(x), RAD2DEG(y), RAD2DEG(z));
+    return cv::Point3f(x, y, z);
   }
 
   void SaveCalibrationFile(cv::Mat in_extrinsic, cv::Mat in_intrinsic, cv::Mat in_dist_coeff, cv::Size in_size)
@@ -134,7 +137,7 @@ class RosCameraLidarApp
 
     cv::Mat calib_data = cv::Mat::zeros(clicked_image_points_.size(), 5, CV_32F);
     cv::Mat tmp = cv::Mat::zeros(1, 5, CV_32F);
-    for (int i = 0; i < clicked_image_points_.size(); i++)
+    for (unsigned int i = 0; i < clicked_image_points_.size(); i++)
     {
       tmp.at<float>(0, 0) = clicked_image_points_[i].x;
       tmp.at<float>(0, 1) = clicked_image_points_[i].y;
@@ -158,7 +161,14 @@ class RosCameraLidarApp
     if (clicked_velodyne_points_.size() == clicked_image_points_.size()
         && clicked_image_points_.size() > 8)
     {
+      // Extrinsics from camera to lidar
+      cv::Mat R_cam2lidar = camera_extrinsics_(cv::Rect_<double>(0, 0, 3, 3));
+      cv::Mat t_cam2lidar = camera_extrinsics_(cv::Rect_<double>(3, 0, 1, 3));
+
+      // Extrinsics from lidar to camera for solving PnP
       cv::Mat rotation_vector, translation_vector;
+      cv::Rodrigues(R_cam2lidar.t(), rotation_vector);
+      translation_vector = -R_cam2lidar.t() * t_cam2lidar;
 
       cv::solvePnP(clicked_velodyne_points_,
                    clicked_image_points_,
@@ -173,29 +183,21 @@ class RosCameraLidarApp
       cv::Mat rotation_matrix;
       cv::Rodrigues(rotation_vector, rotation_matrix);
 
-      cv::Mat camera_velodyne_rotation = rotation_matrix.t();
-      cv::Point3f camera_velodyne_point(translation_vector);
-      cv::Point3f camera_velodyne_translation;
+      // Get estimated extrinsics from camera to lidar
+      R_cam2lidar = rotation_matrix.t();
+      t_cam2lidar = -rotation_matrix.t() * translation_vector;
 
-      camera_velodyne_translation.x = -camera_velodyne_point.z;
-      camera_velodyne_translation.y = camera_velodyne_point.x;
-      camera_velodyne_translation.z = camera_velodyne_point.y;
+      std::cout << "Extrinsics from camera to lidar:" << std::endl;
+      std::cout << "Rotation:\n" << R_cam2lidar << std::endl << std::endl;
+      std::cout << "Translation:\n" << t_cam2lidar << std::endl << std::endl;
+      std::cout << "RPY:\n" << get_rpy_from_matrix(R_cam2lidar) << std::endl << std::endl;
 
-      // Extrinsics from camera to lidar
-      std::cout << "Rotation:" << camera_velodyne_rotation << std::endl << std::endl;
-      std::cout << "Translation:" << camera_velodyne_translation << std::endl << std::endl;
-      std::cout << "RPY: " << get_rpy_from_matrix(camera_velodyne_rotation) << std::endl << std::endl;
+      R_cam2lidar.copyTo(camera_extrinsics_(cv::Rect_<double>(0, 0, 3, 3)));
+      t_cam2lidar.copyTo(camera_extrinsics_(cv::Rect_<double>(3, 0, 1, 3)));
 
-      cv::Mat extrinsics = cv::Mat::eye(4,4, CV_64F);
-      camera_velodyne_rotation.copyTo(extrinsics(cv::Rect_<float>(0,0,3,3)));
+      // std::cout << "extrinsics: \n" << extrinsics << std::endl;
 
-      extrinsics.at<double>(0,3) = camera_velodyne_translation.x;
-      extrinsics.at<double>(1,3) = camera_velodyne_translation.y;
-      extrinsics.at<double>(2,3) = camera_velodyne_translation.z;
-
-      std::cout << "extrinsics: \n" << extrinsics << std::endl;
-
-      SaveCalibrationFile(extrinsics ,camera_instrinsics_, distortion_coefficients_, image_size_);
+      SaveCalibrationFile(camera_extrinsics_,camera_instrinsics_, distortion_coefficients_, image_size_);
     }
   }
 
@@ -256,16 +258,34 @@ class RosCameraLidarApp
     }
   }
 
+  void ExtrinsicsCallback(const autoware_msgs::projection_matrix& in_message)
+  {
+    if (camera_extrinsics_.empty())
+    {
+      camera_extrinsics_ = cv::Mat(4, 4, CV_64F);
+      for (int row = 0; row < 4; row++)
+      {
+        for (int col = 0; col < 4; col++)
+        {
+          camera_extrinsics_.at<double>(row, col) = in_message.projection_matrix[row * 4 + col];
+        }
+      }
+      std::cout << "Extrinsics: \n" << camera_extrinsics_ << std::endl;
+      ROS_INFO("[%s] Camera Extrinsics Loaded", __APP_NAME__);
+    }
+  }
+
 public:
   void Run()
   {
     ros::NodeHandle private_node_handle("~");//to receive args
 
-    std::string image_raw_topic_str, points_raw_topic_str, clusters_topic_str, camera_info_topic_str;
+    std::string image_raw_topic_str, camera_info_topic_str, camera_extrisics_topic_str;
     std::string name_space_str = ros::this_node::getNamespace();
 
     private_node_handle.param<std::string>("image_src", image_raw_topic_str, "/image_rectified");
     private_node_handle.param<std::string>("camera_info_src", camera_info_topic_str, "camera_info");
+    private_node_handle.param<std::string>("camera_extrisics_src", camera_extrisics_topic_str, "projection_matrix");
 
     if (name_space_str != "/")
     {
@@ -275,10 +295,12 @@ public:
       }
       image_raw_topic_str = name_space_str + image_raw_topic_str;
       camera_info_topic_str = name_space_str + camera_info_topic_str;
+      camera_extrisics_topic_str = name_space_str + camera_extrisics_topic_str;
     }
 
     ROS_INFO("[%s] image_src: %s",__APP_NAME__, image_raw_topic_str.c_str());
     ROS_INFO("[%s] camera_info_src: %s",__APP_NAME__, camera_info_topic_str.c_str());
+    ROS_INFO("[%s] camera_extrinsics_src: %s",__APP_NAME__, camera_extrisics_topic_str.c_str());
 
 
     ROS_INFO("[%s] Subscribing to... %s",__APP_NAME__, image_raw_topic_str.c_str());
@@ -287,6 +309,8 @@ public:
 
     ROS_INFO("[%s] Subscribing to... %s",__APP_NAME__, camera_info_topic_str.c_str());
     subscriber_intrinsics_ = node_handle_.subscribe(camera_info_topic_str, 1, &RosCameraLidarApp::IntrinsicsCallback, this);
+
+    subscriber_extrinsics_ = node_handle_.subscribe(camera_extrisics_topic_str, 1, &RosCameraLidarApp::ExtrinsicsCallback, this);
 
     ROS_INFO("[%s] Subscribing to PointCloud ClickedPoint from RVIZ... /clicked_point",__APP_NAME__);
     subscriber_clicked_point_ = node_handle_.subscribe("/clicked_point", 1, &RosCameraLidarApp::RvizClickedPointCallback, this);
