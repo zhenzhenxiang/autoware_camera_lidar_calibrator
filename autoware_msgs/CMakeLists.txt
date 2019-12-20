@@ -6,7 +6,7 @@ find_package(catkin REQUIRED COMPONENTS
         std_msgs
         geometry_msgs
         sensor_msgs
-        jsk_recognition_msgs
+        # jsk_recognition_msgs
         )
 
 
@@ -18,8 +18,8 @@ add_message_files(
             CANData.msg
             CANPacket.msg
             ControlCommandStamped.msg
-            CloudCluster.msg
-            CloudClusterArray.msg
+            # CloudCluster.msg
+            # CloudClusterArray.msg
             ColorSet.msg
             ControlCommand.msg
             DetectedObject.msg
@@ -109,7 +109,7 @@ generate_messages(
         std_msgs
         geometry_msgs
         sensor_msgs
-        jsk_recognition_msgs
+        # jsk_recognition_msgs
 )
 
 catkin_package(
@@ -118,5 +118,5 @@ catkin_package(
         std_msgs
         geometry_msgs
         sensor_msgs
-        jsk_recognition_msgs
+        # jsk_recognition_msgs
 )
