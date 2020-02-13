@@ -82,7 +82,7 @@ Parameter| Type| Description|
 
 ### Notes
 
-- The extrinsic parameters are the transform **from camera to lidar**.
+- The extrinsic parameters in the config and output file are the transform **from camera to lidar**.
 
 - This calibration tool assumes that the RS-LiDAR-32 is installed with the default order of axes for the RS-LiDAR-32 sensor.
   * X axis points to the right
