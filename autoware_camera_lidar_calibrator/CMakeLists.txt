@@ -66,6 +66,19 @@ target_link_libraries(calibration_publisher
         ${catkin_LIBRARIES}
         )
 
+# bag_creator
+add_executable(bag_creator_from_image_and_ply
+    src/bag_creator/bag_creator_from_image_and_ply.cpp
+    )
+
+add_dependencies(bag_creator_from_image_and_ply
+    ${catkin_EXPORTED_TARGETS}
+    )
+
+target_link_libraries(bag_creator_from_image_and_ply
+    ${catkin_LIBRARIES}
+    )
+
 #camera intrinsics node
 catkin_python_setup()
 
