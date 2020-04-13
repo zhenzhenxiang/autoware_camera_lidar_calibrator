@@ -79,6 +79,18 @@ target_link_libraries(bag_creator_from_image_and_ply
     ${catkin_LIBRARIES}
     )
 
+add_executable(convert_from_txt_to_ply
+    src/bag_creator/convert_from_txt_to_ply.cpp
+    )
+
+add_dependencies(convert_from_txt_to_ply
+    ${catkin_EXPORTED_TARGETS}
+    )
+
+target_link_libraries(convert_from_txt_to_ply
+    ${catkin_LIBRARIES}
+    )
+
 #camera intrinsics node
 catkin_python_setup()
 
