@@ -91,6 +91,19 @@ target_link_libraries(convert_from_txt_to_ply
     ${catkin_LIBRARIES}
     )
 
+
+add_executable(query_cloud_poses
+    src/bag_creator/query_cloud_poses.cpp
+    )
+
+add_dependencies(query_cloud_poses
+    ${catkin_EXPORTED_TARGETS}
+    )
+
+target_link_libraries(query_cloud_poses
+    ${catkin_LIBRARIES}
+    )
+
 #camera intrinsics node
 catkin_python_setup()
 
