@@ -19,6 +19,12 @@ find_package(Qt5Core REQUIRED)
 find_package(OpenCV REQUIRED)
 find_package(PCL)
 
+find_package(OpenMP)
+if (OPENMP_FOUND)
+    set (CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${OpenMP_CXX_FLAGS}")
+endif()
+
+
 catkin_package(CATKIN_DEPENDS
     cv_bridge
     image_transport
@@ -34,6 +40,7 @@ catkin_package(CATKIN_DEPENDS
 set(CMAKE_CXX_FLAGS "-O3 -g -Wall ${CMAKE_CXX_FLAGS}")
 
 include_directories(
+    include
     ${catkin_INCLUDE_DIRS}
     ${Boost_INCLUDE_DIRS}
     ${PCL_INCLUDE_DIRS}
@@ -41,6 +48,7 @@ include_directories(
 
 link_directories(${PCL_LIBRARY_DIRS})
 link_directories(${OpenCV_LIBRARY_DIRS})
+link_directories(lib)
 
 #camera lidar node
 add_executable(autoware_camera_lidar_calibration_node
@@ -91,6 +99,18 @@ target_link_libraries(convert_from_txt_to_ply
     ${catkin_LIBRARIES}
     )
 
+add_executable(query_local_clouds
+    src/bag_creator/query_local_clouds.cpp
+    )
+
+add_dependencies(query_local_clouds
+    ${catkin_EXPORTED_TARGETS}
+    )
+
+target_link_libraries(query_local_clouds
+    ${catkin_LIBRARIES}
+    ndt_omp
+    )
 
 add_executable(query_cloud_poses
     src/bag_creator/query_cloud_poses.cpp
