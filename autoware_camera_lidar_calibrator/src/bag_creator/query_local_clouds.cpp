@@ -31,10 +31,8 @@ void readLidarGpsPoses(ifstream& file, vector<uint64_t>& timestamps,
                        vector<Matrix4d>& lidar_gps_poses);
 bool findTimestampIndex(const uint64_t stamp,
                         const vector<uint64_t>& timestamps, size_t& index);
-void cloudRangeFilter(const PointCloud::ConstPtr& inCloud, double minRange_X,
-                      double maxRange_X, double minRange_Y, double maxRange_Y,
-                      double minRange_Z, double maxRange_Z,
-                      PointCloud::Ptr& outCloud);
+void cloudRangeFilter(const PointCloud::ConstPtr& inCloud, double minRange,
+                      double maxRange, PointCloud::Ptr& outCloud);
 
 bool isFileNotOpenedOrEmpty(ifstream& dataFile)
 {
@@ -174,8 +172,8 @@ int main(int argc, char** argv)
   }
 
   // read pcl data in the query range
-  double minDist = 3.0;
-  double maxDist = 100.0;
+  double minDist = 4.0;
+  double maxDist = 200.0;
 
   pcl::PLYReader pclReader;
   vector<PointCloud::Ptr> pointClouds;
@@ -194,8 +192,7 @@ int main(int argc, char** argv)
 
     // apply range filter
     PointCloud::Ptr points(new PointCloud());
-    cloudRangeFilter(pointsValid, minDist, maxDist, minDist, maxDist, -1e3, 1e3,
-                     points);
+    cloudRangeFilter(pointsValid, minDist, maxDist, points);
 
     pointClouds.push_back(points);
   }
@@ -211,8 +208,7 @@ int main(int argc, char** argv)
 
   // apply range filter
   PointCloud::Ptr queryCloud(new PointCloud());
-  cloudRangeFilter(queryCloudValid, minDist, maxDist, minDist, maxDist, -1e3,
-                   1e3, queryCloud);
+  cloudRangeFilter(queryCloudValid, minDist, maxDist, queryCloud);
 
   // create downsampling filter
   pcl::VoxelGrid<Point> voxelgrid;
@@ -434,21 +430,16 @@ bool findTimestampIndex(const uint64_t stamp,
     return false;
 }
 
-void cloudRangeFilter(const PointCloud::ConstPtr& inCloud, double minRange_X,
-                      double maxRange_X, double minRange_Y, double maxRange_Y,
-                      double minRange_Z, double maxRange_Z,
-                      PointCloud::Ptr& outCloud)
+void cloudRangeFilter(const PointCloud::ConstPtr& inCloud, double minRange,
+                      double maxRange, PointCloud::Ptr& outCloud)
 {
   pcl::PointIndices::Ptr indices(new pcl::PointIndices());
   for (size_t i = 0; i < inCloud->points.size(); i++)
   {
     const Point& p = inCloud->points[i];
-    double x_abs = fabs(p.x);
-    double y_abs = fabs(p.y);
-    double z_abs = fabs(p.z);
+    double r = sqrt(p.x * p.x + p.y * p.y + p.z + p.z);
 
-    if (minRange_X < x_abs && x_abs < maxRange_X && minRange_Y < y_abs &&
-        y_abs < maxRange_Y && minRange_Z < z_abs && z_abs < maxRange_Z)
+    if (minRange < r && r < maxRange)
       indices->indices.push_back(i);
   }
 
