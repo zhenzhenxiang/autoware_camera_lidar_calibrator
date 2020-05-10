@@ -58,7 +58,7 @@ This node uses `clicked_point` and `screenpoint` from the `rviz` and `image_view
 1. Perform the intrinsic camera calibration using camera intrinsic calibration tool described above (resulting in the file `YYYYmmdd_HHMMSS_autoware_camera_calibration.yaml`).
 2. Estimate the extrinsic parameters and add them to the calibration file.
 3. In a sourced terminal:\
-`roslaunch autoware_camera_lidar_calibrator camera_lidar_calibration.launch calib_file:=/PATH/TO/YYYYmmdd_HHMMSS_autoware_camera_calibration.yaml image_src:=/image`
+`roslaunch autoware_camera_lidar_calibrator camera_lidar_calibration.launch calib_file:=/PATH/TO/YYYYmmdd_HHMMSS_autoware_camera_calibration.yaml`
 4. An image viewer will be displayed.
 5. Open Rviz and show the point cloud and the correct fixed frame.
 6. Observe the image and the point cloud simultaneously.
