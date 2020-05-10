@@ -48,8 +48,6 @@ int main(int argc, char** argv)
   ros::V_string args;
   ros::removeROSArgs(argc, argv, args);
 
-  ros::Duration(3.0).sleep();
-
   if (args.size() != 4)
   {
     ROS_INFO("Usage: rosrun autoware_camera_lidar_calibrator "
