@@ -233,6 +233,10 @@ int main(int argc, char** argv)
   PointCloud::Ptr queryAccCloud(new PointCloud());
   *queryAccCloud += *queryCloud;
 
+  // -- addional buffer for clouds without downsampling
+  PointCloud::Ptr queryAccCloudRaw(new PointCloud());
+  *queryAccCloudRaw += *queryCloud;
+
   pcl::visualization::PCLVisualizer visAlign("visAlign");
 
   for (size_t i = 0; i < pointClouds.size(); i++)
@@ -250,11 +254,10 @@ int main(int argc, char** argv)
     PointCloud::Ptr downsampled(new PointCloud());
     voxelgrid.setInputCloud(pointClouds[i]);
     voxelgrid.filter(*downsampled);
-    pointClouds[i] = downsampled;
 
     // align
     Matrix4f initTransform = selectedPoses[i].cast<float>();
-    ndt_omp->setInputSource(pointClouds[i]);
+    ndt_omp->setInputSource(downsampled);
     ndt_omp->setInputTarget(queryCloud);
     ndt_omp->align(*pclAligned, initTransform);
 
@@ -284,6 +287,11 @@ int main(int argc, char** argv)
     finalTransform = ndt_omp->getFinalTransformation();
     alignedAccPoses.push_back(finalTransform.cast<double>());
     *queryAccCloud += *pclAlignedAcc;
+
+    PointCloud::Ptr pclAlignedAccRaw(new PointCloud());
+    pcl::transformPointCloud(*pointClouds[i], *pclAlignedAccRaw,
+                             finalTransform);
+    *queryAccCloudRaw += *pclAlignedAccRaw;
 
     // print status
     cout << "Aligned Accumulated Cloud #" << i << endl;
@@ -318,21 +326,31 @@ int main(int argc, char** argv)
 
   // save to ply file
   pcl::PLYWriter writer;
+
+  // -- the integrated clouds with gps poses
   string mergedAccumulatedPlyFileName = dataFolder + "/merged_accumulated_" +
                                         to_string(queryTimestamp) + '_' +
                                         to_string(queryPoseRange) + ".ply";
   writer.write(mergedAccumulatedPlyFileName, *mergedAccumulatedCloud, true);
 
+  // -- the integrated clouds by aligning to the query cloud
   string mergedAlignedPlyFileName = dataFolder + "/merged_aligned_" +
                                     to_string(queryTimestamp) + '_' +
                                     to_string(queryPoseRange) + ".ply";
   writer.write(mergedAlignedPlyFileName, *mergedAlignedCloud, true);
 
+  // -- the integrated clouds by aligning to the previous integrated clouds
   string mergedAlignedAccPlyFileName =
       dataFolder + "/merged_aligned_accumulated_" + to_string(queryTimestamp) +
       '_' + to_string(queryPoseRange) + ".ply";
   writer.write(mergedAlignedAccPlyFileName, *queryAccCloud, true);
 
+  string mergedAlignedAccRawPlyFileName =
+      dataFolder + "/merged_aligned_accumulated_raw_" +
+      to_string(queryTimestamp) + '_' + to_string(queryPoseRange) + ".ply";
+  writer.write(mergedAlignedAccRawPlyFileName, *queryAccCloudRaw, true);
+
+  // -- the query cloud
   string queryPlyFileName =
       dataFolder + "/query_" + to_string(queryTimestamp) + ".ply";
   pcl::removeNaNFromPointCloud(*queryCloudRaw, *queryCloud, indices);
