@@ -148,6 +148,18 @@ target_link_libraries(visualize_cloud_ply
     ${catkin_LIBRARIES}
     )
 
+add_executable(visualize_cloud_dynamically
+    src/bag_creator/visualize_cloud_dynamically.cpp
+    )
+
+add_dependencies(visualize_cloud_dynamically
+    ${catkin_EXPORTED_TARGETS}
+    )
+
+target_link_libraries(visualize_cloud_dynamically
+    ${catkin_LIBRARIES}
+    )
+
 #camera intrinsics node
 catkin_python_setup()
 
