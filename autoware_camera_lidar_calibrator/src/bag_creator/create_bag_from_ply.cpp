@@ -87,7 +87,7 @@ int main(int argc, char** argv)
   pcl::PLYReader pclReader;
   string cloudFile;
 
-  while (cloudPathFile >> cloudFile)
+  while (ros::ok() && cloudPathFile >> cloudFile)
   {
     // get cloud timestamp from file name
     uint64_t stampPCL = atoll(
