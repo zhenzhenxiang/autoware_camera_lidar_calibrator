@@ -113,6 +113,10 @@ int main(int argc, char** argv)
       validLidarStamps.push_back(t);
       lidarGpsPoses.push_back(interPose);
     }
+
+    // move current gps stamp index to previous one for larger search range
+    if (curGpsStampInd > 0)
+      curGpsStampInd--;
   }
 
   assert(validLidarStamps.size() == lidarGpsPoses.size());
@@ -128,7 +132,7 @@ int main(int argc, char** argv)
 
   ofstream outputFile(outputFilePath.c_str());
   outputFile << "# lidar_stamp x y z roll pitch yaw" << endl;
-  for (size_t i = 0; i < lidarStamps.size(); i++)
+  for (size_t i = 0; i < validLidarStamps.size(); i++)
   {
     double x, y, z, roll, pitch, yaw;
     splitEigenTransform(lidarGpsPoses[i], x, y, z, roll, pitch, yaw);
